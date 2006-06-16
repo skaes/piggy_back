@@ -96,7 +96,7 @@ class ActiveRecord::Base
     
     protected
     def piggy_back_info
-      @piggy_back_info ||= descends_from_active_record? ? {} : super
+      @piggy_back_info ||= descends_from_active_record? ? {} : superclass.piggy_back_info
     end
     
     # define reader method(s) for piggy backed association attribute
