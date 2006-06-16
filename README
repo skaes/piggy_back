@@ -1,0 +1,60 @@
+== Type Aware Piggy Backed Queries for Rails
+
+This plugin makes it possible to piggy back attributes from a has_one or
+belongs_to association to the records retrieved on a AR::Base.find query.
+
+
+== Usage
+
+Writing
+
+    piggy_back :user_name, :user, :name, :phone
+
+or
+
+    piggy_back :user_name, :from => :user, :attributes => [:name, :phone]
+
+will add a user_name and a user_phone method to the current class, if
+:user has been defined as a has_one or belongs_to association. The
+generated method will return the correctly type cast value of
+@attributes['user_name'], if the attribute has been retrieved by a
+corresponding find, for example
+
+   find :all, :piggy => :user_name, :limit => 20
+
+or simply call user.name if no attribute 'user_name' is present.
+
+You can attach all content columns of the associated class using
+
+   piggy_back :all_of_user, :user
+
+or
+
+   piggy_back :all_of_user, :from => :user, :attributes => :*
+
+This will define read methods for all content columns of the user
+association (not recommended).
+
+More than one piggy back is accepted by the piggy option given to find:
+
+   find :all, :piggy => [:user_name, :contract_name] 
+
+will retrieve attribute 'name' from association contract along with
+attribute 'name' from user, provided :contract_name has been declared
+as a piggy back as well:
+
+   piggy_back :contract_name, :contract, :name
+
+This also works for finds constructed from associations. So
+
+   article.comments.find(:piggy => :user_name)
+
+will retrieve all comments for article and attach comment.user.name to
+the retrieved comments.
+
+
+== Additional Information
+
+See http://railsexpress.de/blog/articles/2006/05/29/simpler-piggy-backing.
+
+Or just follow a Jedi's advice: "Use the source, Luke!"

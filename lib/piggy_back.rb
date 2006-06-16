@@ -23,7 +23,8 @@
 
 class ActiveRecord::Base
   class << self
-   
+
+    # make validate_find_options accept :piggy
     VALID_FIND_OPTIONS << :piggy
     
     alias_method :old_construct_finder_sql, :construct_finder_sql
@@ -45,31 +46,13 @@ class ActiveRecord::Base
       end
     end
     
-    # type correct piggy back attributes from an has_one or belongs_to association:
+    # declare piggy back for current AR class. Calls look like
     #
-    #   piggy_back :user_name, :user, :name, :phone
+    #   piggy_back :user_name, :from => _association_, :attributes => _attribute list_
     #
-    # will add a user_name and a user_phone method to the current class, if :user has been defined
-    # as a :has_one or :belongs_to association. The generated method will return
-    # the correctly type cast value of @attributes['user_name'], if the attribute
-    # has been retrieved by a corresponding find, for example:
+    # or
     #
-    #   find :all, :piggy => :user_name, :limit => 20
-    #
-    # or simply call user.name if no attribute 'user_name' is present.
-    #
-    #   piggy_back :all_of_user, :user
-    #
-    # will define read methods for all content columns of the user association (not recommended)
-    #
-    # More than one piggy back is accepted by the piggy option given to find:
-    #
-    #   find :all, :piggy => [:user_name, :contract_name] 
-    #
-    # will retrieve attribute 'name' from association contract along with attribute 'name' from user,
-    # provided :contract_name has been declared as a piggy back  as well:
-    #
-    #   piggy_back :contract_name, :contract, :name
+    #    piggy_back :user_name, _association_, _attr_1_, ...
     #
     def piggy_back(piggy_back_name, *args)
       if args.first.is_a? Hash
@@ -94,7 +77,7 @@ class ActiveRecord::Base
       columns.each{|column| define_piggy_back_read_method(column, reflection)}
       
       add_piggy_back_selects_and_joins!(reflection_name, attributes, select="", joins="")
-      (@piggy_back_info ||= {})[piggy_back_name] = [select, joins]
+      piggy_back_info[piggy_back_name] = [select, joins]
     end
            
     # replace piggy option by adding to :select and :joins options
@@ -103,14 +86,19 @@ class ActiveRecord::Base
       select = (options[:select] ||= "#{table_name}.*")
       joins = (options[:joins] ||= '')
       piggy = [piggy] if piggy.is_a? Symbol
+      piggy_info_hash = piggy_back_info()
       for piggy_name in piggy do
-        piggy_back_info = @piggy_back_info[piggy_name]
-        select << piggy_back_info[0]
-        joins << piggy_back_info[1]
+        p_info = piggy_info_hash[piggy_name]
+        select << p_info[0]
+        joins << p_info[1]
       end
     end
     
     protected
+    def piggy_back_info
+      @piggy_back_info ||= descends_from_active_record? ? {} : super
+    end
+    
     # define reader method(s) for piggy backed association attribute
     def define_piggy_back_read_method(column, reflection)
       attr = column.name
