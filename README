@@ -1,7 +1,7 @@
 == Type Aware Piggy Backed Queries for Rails
 
 This plugin makes it possible to piggy back attributes from a has_one or
-belongs_to association to the records retrieved on a AR::Base.find query.
+belongs_to association to the records retrieved on a <tt>AR::Base.find</tt> query.
 
 
 == Usage
@@ -15,14 +15,14 @@ or
     piggy_back :user_name, :from => :user, :attributes => [:name, :phone]
 
 will add a user_name and a user_phone method to the current class, if
-:user has been defined as a has_one or belongs_to association. The
+<tt>:user</tt> has been defined as a has_one or belongs_to association. The
 generated method will return the correctly type cast value of
-@attributes['user_name'], if the attribute has been retrieved by a
+<tt>@attributes['user_name']</tt>, if the attribute has been retrieved by a
 corresponding find, for example
 
    find :all, :piggy => :user_name, :limit => 20
 
-or simply call user.name if no attribute 'user_name' is present.
+or simply call <tt>user.name</tt> if no attribute +user_name+ is present.
 
 You can attach all content columns of the associated class using
 
@@ -37,10 +37,10 @@ association (not recommended).
 
 More than one piggy back is accepted by the piggy option given to find:
 
-   find :all, :piggy => [:user_name, :contract_name] 
+   find :all, :piggy => [:user_name, :contract_name]
 
-will retrieve attribute 'name' from association contract along with
-attribute 'name' from user, provided :contract_name has been declared
+will retrieve attribute +name+ from association contract along with
+attribute +name+ from user, provided <tt>:contract_name</tt> has been declared
 as a piggy back as well:
 
    piggy_back :contract_name, :contract, :name
@@ -49,8 +49,26 @@ This also works for finds constructed from associations. So
 
    article.comments.find(:piggy => :user_name)
 
-will retrieve all comments for article and attach comment.user.name to
+will retrieve all comments for article and attach <tt>comment.user.name</tt> to
 the retrieved comments.
+
+By default, the prefix for the generated reader methods is derived
+from the association name. You can override this by passing a <tt>:prefix</tt>
+option to the piggy back declaration.
+
+  piggy_back :user_name, :user, :name, :phone, :prefix => :usr
+
+will generate reader methods +usr_name+ and +usr_phone+.
+
+
+== Preliminary hack
+
+For now, piggy back will also work with has_many and has_many :through
+associations. This is only useful if the associated query is known to
+return a single value.
+
+This feature will likely be removed once rails supports has_one :through
+associations.
 
 
 == Additional Information
