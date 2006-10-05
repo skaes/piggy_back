@@ -78,6 +78,7 @@ class ActiveRecord::Base
         conditions << " AND " unless conditions.empty? || p_info[2].empty?
         conditions << p_info[2]
       end
+      options.delete(:conditions) if conditions.empty?
     end
 
     protected
