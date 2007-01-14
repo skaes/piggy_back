@@ -54,7 +54,7 @@ class ActiveRecord::Base
       else
         columns = attributes.map{|name| reflection.klass.columns_hash[name.to_s]}
       end
-      columns.each{|column| define_piggy_back_read_method(column, prefix)}
+      columns.each{|column| define_piggy_back_read_method(reflection.name, column, prefix)}
 
       add_piggy_back_sql_data!(reflection_name, prefix, attributes, select="", joins="", conditions="")
       piggy_back_info[piggy_back_name] = [select, joins, conditions]
@@ -88,7 +88,7 @@ class ActiveRecord::Base
 
     # define reader method(s) for piggy backed association attribute
     # +prefix+ is prefixed to the attribute name
-    def define_piggy_back_read_method(column, prefix)
+    def define_piggy_back_read_method(reflection_name, column, prefix)
       attr = column.name
       attr_key = "#{prefix}_#{attr}"
       return if instance_methods.include?(attr_key)
@@ -105,7 +105,7 @@ class ActiveRecord::Base
           if @attributes.has_key? '#{attr_key}'
             #{access_code}
           else
-            #{prefix}.#{attr}
+            #{reflection_name}.#{attr}
           end
         end
       end_method
