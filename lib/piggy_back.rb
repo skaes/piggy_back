@@ -39,6 +39,7 @@ class ActiveRecord::Base
         reflection_name = hash[:from]
         prefix = hash[:prefix]
         table_alias = hash[:alias]
+        join_type = 'INNER' if hash[:inner_join]
       else
         reflection_name = args.first
         attributes = args[1..-1]
@@ -46,6 +47,7 @@ class ActiveRecord::Base
       end
       reflection = reflections[reflection_name]
       prefix ||= reflection.name
+      join_type ||= 'LEFT'
 
       unless [:belongs_to, :has_one, :has_many].include? reflection.macro
         raise "can't piggy back #{reflection.macro} on class #{self}"
@@ -59,7 +61,7 @@ class ActiveRecord::Base
       end
       columns.each{|column| define_piggy_back_read_method(reflection.name, column, prefix)}
 
-      add_piggy_back_sql_data!(reflection_name, prefix, table_alias, attributes, select="", joins="", conditions="")
+      add_piggy_back_sql_data!(reflection_name, prefix, table_alias, attributes, select="", joins="", conditions="", join_type)
       piggy_back_info[piggy_back_name] = [select, joins, conditions]
     end
 
@@ -115,7 +117,7 @@ class ActiveRecord::Base
     end
 
     # add select, join and conditions form the given association
-    def add_piggy_back_sql_data!(reflection_name, prefix, table_alias, attributes, select, joins, conditions)
+    def add_piggy_back_sql_data!(reflection_name, prefix, table_alias, attributes, select, joins, conditions, join_type)
       ktn = table_name
       kpkey = primary_key
       reflection = reflections[reflection_name]
@@ -133,15 +135,15 @@ class ActiveRecord::Base
       case reflection.macro
       when :belongs_to
         if table_alias
-          joins << " LEFT JOIN #{atn} #{table_alias} ON #{table_alias}.#{fpkey}=#{ktn}.#{fkey} "
+          joins << " #{join_type} JOIN #{atn} #{table_alias} ON #{table_alias}.#{fpkey}=#{ktn}.#{fkey} "
         else
-          joins << " LEFT JOIN #{atn} ON #{atn}.#{fpkey}=#{ktn}.#{fkey} "
+          joins << " #{join_type} JOIN #{atn} ON #{atn}.#{fpkey}=#{ktn}.#{fkey} "
         end
       when :has_one
         if table_alias
-          joins << " LEFT JOIN #{atn} #{table_alias} ON #{table_alias}.#{fkey}=#{ktn}.#{kpkey} "
+          joins << " #{join_type} JOIN #{atn} #{table_alias} ON #{table_alias}.#{fkey}=#{ktn}.#{kpkey} "
         else
-          joins << " LEFT JOIN #{atn} ON #{atn}.#{fkey}=#{ktn}.#{kpkey} "
+          joins << " #{join_type} JOIN #{atn} ON #{atn}.#{fkey}=#{ktn}.#{kpkey} "
         end
         when :has_many
         raise "piggy_back: aliasing not implemented for has_many" if table_alias
